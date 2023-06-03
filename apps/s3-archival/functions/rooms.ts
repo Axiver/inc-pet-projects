@@ -1,8 +1,19 @@
 import PrismaClient from "@inc/db";
 
 const retrieveRooms = async (archivalDate: Date) => {
-  const result = await PrismaClient.messages.groupBy({
-    by: ["room"],
+  const result = await PrismaClient.rooms.findMany({
+    select: {
+      id: true,
+    },
+    where: {
+      messages: {
+        every: {
+          createdAt: {
+            lte: archivalDate,
+          },
+        },
+      },
+    },
   });
 
   return result;
