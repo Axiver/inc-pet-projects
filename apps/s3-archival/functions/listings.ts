@@ -2,11 +2,9 @@ import PrismaClient from "@inc/db";
 
 const select = {
   id: true,
-  owner: true,
   listingBookmarks: {
     select: {
       id: true,
-      userId: true,
     },
   },
 };

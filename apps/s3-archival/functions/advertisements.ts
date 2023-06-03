@@ -1,7 +1,7 @@
 import PrismaClient from "@inc/db";
 
 const retrieveAdverts = async (archivalDate: Date) => {
-  const result = await PrismaClient.advertisements.findMany({
+  const endedAdvertisements = await PrismaClient.advertisements.findMany({
     where: {
       AND: [
         {
@@ -18,22 +18,23 @@ const retrieveAdverts = async (archivalDate: Date) => {
           },
         },
       ],
-      OR: [
+    },
+  });
+
+  const inactiveAdvertisements = await PrismaClient.advertisements.findMany({
+    where: {
+      active: false,
+      AND: [
         {
-          active: false,
-          AND: [
-            {
-              updatedAt: {
-                lte: archivalDate,
-              },
-            },
-          ],
+          updatedAt: {
+            lte: archivalDate,
+          },
         },
       ],
     },
   });
 
-  return result;
+  return [...endedAdvertisements, ...inactiveAdvertisements];
 };
 
 export default retrieveAdverts;

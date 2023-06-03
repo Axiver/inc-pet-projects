@@ -3,14 +3,14 @@ import retrieveListings from "./functions/listings";
 import retrieveRooms from "./functions/rooms";
 
 // -- Constants -- //
-const archivalDate = new Date(Date.now() - 1000 * 60 * 60 * 24); // 3 Months
+const archivalDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3); // 3 Months
 
 // -- Functions -- //
 
 // -- Main -- //
 const main = async () => {
   // Print out some information about the archival process
-  console.log("Starting archival process");
+  console.log("Starting archival process for database " + process.env.DATABASE_URL);
   console.log(`Archiving listings older than ${archivalDate}`);
   console.log("Retrieving data to archive");
 
@@ -19,7 +19,7 @@ const main = async () => {
   const advertisements = await retrieveAdverts(archivalDate);
   const rooms = await retrieveRooms(archivalDate);
 
-  console.log({ listings, rooms });
+  console.log({ listings, rooms, advertisements });
 };
 
 main();
