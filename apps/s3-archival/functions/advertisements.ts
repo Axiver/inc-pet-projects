@@ -1,5 +1,6 @@
 import PrismaClient from "@inc/db";
 
+// Identifies the advertisements to be archived
 const retrieveAdverts = async (archivalDate: Date) => {
   const endedAdvertisements = await PrismaClient.advertisements.findMany({
     where: {
@@ -37,4 +38,9 @@ const retrieveAdverts = async (archivalDate: Date) => {
   return [...endedAdvertisements, ...inactiveAdvertisements];
 };
 
-export default retrieveAdverts;
+const getAdverts = async (id: number[]) => {};
+
+export default {
+  identify: retrieveAdverts,
+  get: getAdverts,
+};

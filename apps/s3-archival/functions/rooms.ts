@@ -24,4 +24,6 @@ const retrieveRooms = async (archivalDate: Date) => {
   return result;
 };
 
-export default retrieveRooms;
+export default {
+  identify: retrieveRooms,
+};

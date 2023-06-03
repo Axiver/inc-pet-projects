@@ -36,4 +36,30 @@ const retrieveListings = async (archivalDate: Date) => {
   return [...archivedListings, ...deletedListings];
 };
 
-export default retrieveListings;
+const getListings = async (id: number[]) => {
+  return await PrismaClient.listing.findMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+};
+
+const getBookmarks = async (id: number[]) => {
+  return await PrismaClient.listingBookmarks.findMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+};
+
+export default {
+  identify: retrieveListings,
+  get: getListings,
+  bookmarks: {
+    get: getBookmarks,
+  },
+};
