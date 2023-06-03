@@ -19,7 +19,7 @@ const main = async () => {
   const advertisements = await retrieveAdverts(archivalDate);
   const rooms = await retrieveRooms(archivalDate);
 
-  console.log({ rooms });
+  console.log({ listings, rooms });
 };
 
 main();
