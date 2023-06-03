@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "@inc/db": "workspace:^",
+    "@json2csv/node": "^7.0.1",
     "@prisma/client": "4.12.0",
     "aws-sdk": "^2.1390.0",
+    "fs": "0.0.1-security",
     "typescript": "4.9.5"
   },
   "devDependencies": {
