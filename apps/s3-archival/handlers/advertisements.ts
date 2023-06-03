@@ -38,7 +38,15 @@ const retrieveAdverts = async (archivalDate: Date) => {
   return [...endedAdvertisements, ...inactiveAdvertisements];
 };
 
-const getAdverts = async (id: number[]) => {};
+const getAdverts = async (id: number[]) => {
+  return await PrismaClient.advertisements.findMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+};
 
 export default {
   identify: retrieveAdverts,

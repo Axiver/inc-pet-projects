@@ -1,4 +1,4 @@
-import { advertHandler, listingsHandler, roomsHandler } from "./functions";
+import { advertHandler, listingsHandler, roomsHandler } from "./handlers";
 
 // -- Constants -- //
 const archivalDate = new Date(Date.now() - 1000 * 60 * 60 * 24); // 3 Months
@@ -45,12 +45,24 @@ const getDataToBeArchived = async (dataToBeArchived: Awaited<ReturnType<typeof i
   // Construct array of ids to be archived
   const listingIds = dataToBeArchived.listings.map((listing) => listing.id);
   const bookmarkIds = dataToBeArchived.listings.map((listing) => listing.listingBookmarks.map((bookmark) => bookmark.id)).flat();
+  const advertIds = dataToBeArchived.advertisements.map((advert) => advert.id);
+  const roomIds = dataToBeArchived.rooms.map((room) => room.id);
+  const messageIds = dataToBeArchived.rooms.map((room) => room.messages.map((message) => message.id)).flat();
 
   // Retrieve the data to archive
   const listings = await listingsHandler.get(listingIds);
   const listingBookmarks = await listingsHandler.bookmarks.get(bookmarkIds);
+  const advertisements = await advertHandler.get(advertIds);
+  const rooms = await roomsHandler.get(roomIds);
+  const messages = await roomsHandler.messages.get(messageIds);
 
-  console.log({ listings, listingBookmarks });
+  return {
+    listings,
+    listingBookmarks,
+    advertisements,
+    rooms,
+    messages,
+  };
 };
 
 // -- Main -- //
@@ -58,13 +70,20 @@ const main = async () => {
   // Print out some information about the archival process
   console.log("Starting archival process for database " + process.env.DATABASE_URL);
   console.log(`Archiving listings older than ${archivalDate}`);
-  console.log("Retrieving data to archive");
+  console.log("Identifying data to archive");
 
   // Identify the data to be archived
   const dataToBeArchived = await identifyDataToBeArchived();
 
+  console.log("Retrieving data to archive");
+
   // Get the data to be archived
   const data = await getDataToBeArchived(dataToBeArchived);
+
+  console.log("Data retrieved");
+  console.log("Generating csv files");
+
+  console.log({ data });
 };
 
 main();
