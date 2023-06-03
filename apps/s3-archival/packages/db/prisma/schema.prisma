@@ -150,7 +150,7 @@ model Listing {
   createdAt                                   DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                                   DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(6)
   archived                                    Boolean                   @default(false)
-  deletedAt                                   DateTime                  @default(now()) @map("deleted_at") @db.Timestamptz(6)
+  deletedAt                                   DateTime?                 @map("deleted_at") @db.Timestamptz(6)
   multiple                                    Boolean                   @default(false)
   category                                    Category                  @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "listing_fk")
   users                                       Users                     @relation(fields: [owner], references: [id], onDelete: Cascade, map: "listing_fk_1")

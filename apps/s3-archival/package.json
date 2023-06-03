@@ -4,10 +4,6 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "prisma:generate": "prisma generate",
-    "prisma:patchCasing": "node ./prisma/scripts/casingFix.js && prisma format && prisma generate",
-    "prisma:compile": "tsc --project tsconfig.compile.json",
-    "prisma:seed": "prisma db seed",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "\"npx ts-node ./index.ts\""
   },
@@ -15,9 +11,10 @@
   "author": "",
   "license": "ISC",
   "prisma": {
-    "seed": "ts-node prisma/seeding/seed.ts --transpileOnly"
+    "seed": "ts-node db/prisma/seeding/seed.ts --transpileOnly"
   },
   "dependencies": {
+    "@inc/db": "workspace:^",
     "@prisma/client": "4.12.0",
     "typescript": "4.9.5"
   },
