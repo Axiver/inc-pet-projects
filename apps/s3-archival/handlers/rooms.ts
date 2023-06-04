@@ -44,10 +44,36 @@ const getMessages = async (id: number[]) => {
   });
 };
 
+const deleteRooms = async (id: string[]) => {
+  await PrismaClient.rooms.deleteMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+
+  console.log(`Deleted archived chat rooms from database`);
+};
+
+const deleteMessages = async (id: number[]) => {
+  await PrismaClient.messages.deleteMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+
+  console.log(`Deleted archived chat messages from database`);
+};
+
 export default {
   identify: retrieveRooms,
   get: getRooms,
+  delete: deleteRooms,
   messages: {
     get: getMessages,
+    delete: deleteMessages,
   },
 };

@@ -56,10 +56,36 @@ const getBookmarks = async (id: number[]) => {
   });
 };
 
+const deleteListings = async (id: number[]) => {
+  await PrismaClient.listing.deleteMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+
+  console.log("Deleted archived listings from database");
+};
+
+const deleteBookmarks = async (id: number[]) => {
+  await PrismaClient.listingBookmarks.deleteMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+
+  console.log("Deleted archived listings bookmarks from database");
+};
+
 export default {
   identify: retrieveListings,
   get: getListings,
+  delete: deleteListings,
   bookmarks: {
     get: getBookmarks,
+    delete: deleteBookmarks,
   },
 };

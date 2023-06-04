@@ -50,19 +50,13 @@ const identifyDataToBeArchived = async () => {
 /**
  * Obtains the data to be archived
  */
-const getDataToBeArchived = async (
-  dataToBeArchived: Awaited<ReturnType<typeof identifyDataToBeArchived>>
-) => {
+const getDataToBeArchived = async (dataToBeArchived: Awaited<ReturnType<typeof identifyDataToBeArchived>>) => {
   // Construct array of ids to be archived
   const listingIds = dataToBeArchived.listings.map((listing) => listing.id);
-  const bookmarkIds = dataToBeArchived.listings
-    .map((listing) => listing.listingBookmarks.map((bookmark) => bookmark.id))
-    .flat();
+  const bookmarkIds = dataToBeArchived.listings.map((listing) => listing.listingBookmarks.map((bookmark) => bookmark.id)).flat();
   const advertIds = dataToBeArchived.advertisements.map((advert) => advert.id);
   const roomIds = dataToBeArchived.rooms.map((room) => room.id);
-  const messageIds = dataToBeArchived.rooms
-    .map((room) => room.messages.map((message) => message.id))
-    .flat();
+  const messageIds = dataToBeArchived.rooms.map((room) => room.messages.map((message) => message.id)).flat();
 
   // Retrieve the data to archive
   const listings = await listingsHandler.get(listingIds);
@@ -81,66 +75,75 @@ const getDataToBeArchived = async (
 };
 
 const uploadCSVToGlacier = async (vaultName: string, filePath: string, dataToBeArchived) => {
-  const jsonPath = path.join(projectDir, 'output', 'index.json')
-  const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-  const parsedJsonData = JSON.parse(jsonData)
+  return new Promise<void>((resolve, reject) => {
+    const jsonPath = path.join(projectDir, "output", "index.json");
+    const jsonData = fs.readFileSync(jsonPath, "utf-8");
+    const parsedJsonData = JSON.parse(jsonData);
 
-  fs.readdir(filePath, (err, files) => {
-    if (err) {
-      console.log("Error reading directory:", err);
-      return;
-    }
-
-    const fileNames = files.filter((file) => {
-      return fs.statSync(`${filePath}/${file}`).isFile();
-    });
-
-    fileNames.forEach(async (fileName) => {
-      const csvPath = path.join(filePath, fileName);
-      const type = fileName.split('.')[0]
-      const fileData = fs.readFileSync(csvPath);
-      const fileBuffer = Buffer.from(fileData);
-      let ids: number[] = []
-
-      const uploadResponse = await glacier
-        .uploadArchive({
-          accountId: process.env.AWS_ACCOUNT_ID,
-          vaultName,
-          archiveDescription: `CSV file: ${filePath}`,
-          body: fileBuffer,
-        })
-        .promise();
-
-      console.log(`Upload successful. Archive ID: ${uploadResponse.archiveId}`);
-
-      if (type === 'advertisements') {
-        ids = dataToBeArchived.advertisements.map((advertisement) => advertisement.id)
-      } else if (type === 'listingBookmarks') {
-        dataToBeArchived.listings.forEach((listing) => {
-          listing.listingBookmarks.forEach((bookmark) => {
-            ids.push(bookmark.id)
-          })
-        })
-      } else if (type === 'listings') {
-        ids = dataToBeArchived.listings.map((listing) => listing.id)
-      } else if (type === 'messages') {
-        dataToBeArchived.rooms.forEach((room) => {
-          room.messages.forEach((message) => {
-            ids.push(message.id)
-          })
-        })
-      } else if (type === 'rooms') {
-        ids = dataToBeArchived.rooms.map((room) => room.id)
+    fs.readdir(filePath, (err, files) => {
+      if (err) {
+        console.log("Error reading directory:", err);
+        return;
       }
 
-      ids.forEach(id => {
-        if (!parsedJsonData[type]) {
-          parsedJsonData[type] = {}; // Initialize the object if it doesn't exist
-        }
-        parsedJsonData[type][id] = uploadResponse.archiveId;
-      })
+      const fileNames = files.filter((file) => {
+        return fs.statSync(`${filePath}/${file}`).isFile();
+      });
 
-      fs.writeFileSync(jsonPath, JSON.stringify(parsedJsonData, null, 2))
+      fileNames.forEach(async (fileName) => {
+        const csvPath = path.join(filePath, fileName);
+        const type = fileName.split(".")[0];
+        const fileData = fs.readFileSync(csvPath);
+        const fileBuffer = Buffer.from(fileData);
+        let ids: number[] = [];
+
+        const uploadResponse = await glacier
+          .uploadArchive({
+            accountId: process.env.AWS_ACCOUNT_ID,
+            vaultName,
+            archiveDescription: `CSV file: ${filePath}`,
+            body: fileBuffer,
+          })
+          .promise();
+
+        console.log(`Upload successful. Archive ID: ${uploadResponse.archiveId}`);
+
+        if (type === "advertisements") {
+          ids = dataToBeArchived.advertisements.map((advertisement) => advertisement.id);
+        } else if (type === "listingBookmarks") {
+          dataToBeArchived.listings.forEach((listing) => {
+            listing.listingBookmarks.forEach((bookmark) => {
+              ids.push(bookmark.id);
+            });
+          });
+        } else if (type === "listings") {
+          ids = dataToBeArchived.listings.map((listing) => listing.id);
+        } else if (type === "messages") {
+          dataToBeArchived.rooms.forEach((room) => {
+            room.messages.forEach((message) => {
+              ids.push(message.id);
+            });
+          });
+        } else if (type === "rooms") {
+          ids = dataToBeArchived.rooms.map((room) => room.id);
+        }
+
+        ids.forEach((id) => {
+          if (!parsedJsonData[type]) {
+            parsedJsonData[type] = {}; // Initialize the object if it doesn't exist
+          }
+          parsedJsonData[type][id] = uploadResponse.archiveId;
+        });
+
+        fs.writeFile(jsonPath, JSON.stringify(parsedJsonData, null, 2), (err) => {
+          if (err) {
+            console.log("Error writing to JSON file:", err);
+            return;
+          }
+
+          resolve();
+        });
+      });
     });
   });
 };
@@ -159,18 +162,34 @@ const uploadCSVToGlacier = async (vaultName: string, filePath: string, dataToBeA
 //     .promise();
 // };
 
+const cleanUpDatabase = async (dataToBeArchived: Awaited<ReturnType<typeof identifyDataToBeArchived>>) => {
+  console.log("Deleting data from database");
+
+  // Construct array of ids to be archived
+  const listingIds = dataToBeArchived.listings.map((listing) => listing.id);
+  const bookmarkIds = dataToBeArchived.listings.map((listing) => listing.listingBookmarks.map((bookmark) => bookmark.id)).flat();
+  const advertIds = dataToBeArchived.advertisements.map((advert) => advert.id);
+  const roomIds = dataToBeArchived.rooms.map((room) => room.id);
+  const messageIds = dataToBeArchived.rooms.map((room) => room.messages.map((message) => message.id)).flat();
+
+  // Delete the data to archive
+  await listingsHandler.delete(listingIds);
+  await listingsHandler.bookmarks.delete(bookmarkIds);
+  await advertHandler.delete(advertIds);
+  await roomsHandler.delete(roomIds);
+  await roomsHandler.messages.delete(messageIds);
+};
+
 // -- Main -- //
 const main = async () => {
   // Print out some information about the archival process
-  console.log(
-    "Starting archival process for database " + process.env.DATABASE_URL
-  );
+  console.log("Starting archival process for database " + process.env.DATABASE_URL);
   console.log(`Archiving listings older than ${archivalDate}`);
   console.log("Identifying data to archive");
 
   // Identify the data to be archived
   const dataToBeArchived = await identifyDataToBeArchived();
-  console.log(dataToBeArchived)
+  console.log(dataToBeArchived);
 
   console.log("Retrieving data to archive");
 
@@ -185,22 +204,22 @@ const main = async () => {
   await createOutputFolder(outputDir);
 
   // Generate CSV files
-  const promises = Object.keys(data).map((key) =>
-    generateCSV(outputDir, data[key], key)
-  );
+  const promises = Object.keys(data).map((key) => generateCSV(outputDir, data[key], key));
 
   await Promise.all(promises);
 
   console.log("CSV Uploaded");
   console.log("Uploading to Glacier");
 
-  uploadCSVToGlacier(vaultName, csvFilePath, dataToBeArchived)
-    .then(() => {
-      console.log("All files uploaded to Glacier successfully");
-    })
-    .catch((error) => {
-      console.error("Failed: ", error);
-    });
+  await uploadCSVToGlacier(vaultName, csvFilePath, dataToBeArchived).catch((error) => {
+    console.error("Failed: ", error);
+  });
+
+  console.log("All files uploaded to Glacier successfully");
+
+  // Delete data from the database
+  console.log("Cleaning up database");
+  await cleanUpDatabase(dataToBeArchived);
 
   // Retrieving of Archive (By initiating through jobs)
   // glacier.initiateJob(

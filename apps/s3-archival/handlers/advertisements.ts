@@ -48,7 +48,20 @@ const getAdverts = async (id: number[]) => {
   });
 };
 
+const deleteAdverts = async (id: number[]) => {
+  await PrismaClient.advertisements.deleteMany({
+    where: {
+      id: {
+        in: id,
+      },
+    },
+  });
+
+  console.log(`Deleted archived advertisements from database`);
+};
+
 export default {
   identify: retrieveAdverts,
   get: getAdverts,
+  delete: deleteAdverts,
 };
