@@ -180,20 +180,43 @@ const cleanUpDatabase = async (dataToBeArchived: Awaited<ReturnType<typeof ident
   await roomsHandler.messages.delete(messageIds);
 };
 
+// Deletes the entire directory
+const deleteCSVFiles = async (filePath: string) => {
+  return new Promise<void>((resolve, reject) => {
+    fs.rmdir(filePath, { recursive: true }, (err) => {
+      if (err) {
+        console.log("Error deleting CSV files:", err);
+        return;
+      }
+
+      console.log("CSV Files deleted");
+      resolve();
+    });
+  });
+};
+
 // -- Main -- //
 const main = async () => {
   // Print out some information about the archival process
   console.log("Starting archival process for database " + process.env.DATABASE_URL);
   console.log(`Archiving listings older than ${archivalDate}`);
-  console.log("Identifying data to archive");
 
   // Identify the data to be archived
+  console.log("Identifying data to archive");
   const dataToBeArchived = await identifyDataToBeArchived();
-  console.log(dataToBeArchived);
 
-  console.log("Retrieving data to archive");
+  // Checks if there is any data to be archived
+  if (
+    Object.values(dataToBeArchived)
+      .filter((e) => e.length > 0)
+      .every((e) => e.length === 0)
+  ) {
+    console.log("No data to archive");
+    return;
+  }
 
   // Get the data to be archived
+  console.log("Retrieving data to archive");
   const data = await getDataToBeArchived(dataToBeArchived);
 
   console.log("Data retrieved");
@@ -220,6 +243,10 @@ const main = async () => {
   // Delete data from the database
   console.log("Cleaning up database");
   await cleanUpDatabase(dataToBeArchived);
+
+  // Delete the CSV files
+  console.log("Cleaning up CSV files");
+  await deleteCSVFiles(outputDir);
 
   // Retrieving of Archive (By initiating through jobs)
   // glacier.initiateJob(
