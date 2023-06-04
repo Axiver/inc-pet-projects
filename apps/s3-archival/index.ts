@@ -74,13 +74,13 @@ const getDataToBeArchived = async (dataToBeArchived: Awaited<ReturnType<typeof i
   };
 };
 
-const uploadCSVToGlacier = async (vaultName: string, filePath: string, dataToBeArchived) => {
+const uploadCSVToGlacier = (vaultName: string, filePath: string, dataToBeArchived) => {
   return new Promise<void>((resolve, reject) => {
     const jsonPath = path.join(projectDir, "output", "index.json");
     const jsonData = fs.readFileSync(jsonPath, "utf-8");
     const parsedJsonData = JSON.parse(jsonData);
 
-    fs.readdir(filePath, (err, files) => {
+    fs.readdir(filePath, async (err, files) => {
       if (err) {
         console.log("Error reading directory:", err);
         return;
@@ -90,60 +90,65 @@ const uploadCSVToGlacier = async (vaultName: string, filePath: string, dataToBeA
         return fs.statSync(`${filePath}/${file}`).isFile();
       });
 
-      fileNames.forEach(async (fileName) => {
-        const csvPath = path.join(filePath, fileName);
-        const type = fileName.split(".")[0];
-        const fileData = fs.readFileSync(csvPath);
-        const fileBuffer = Buffer.from(fileData);
-        let ids: number[] = [];
+      const promises = fileNames.map(async (fileName) => {
+        return new Promise<void>(async (resolve, reject) => {
+          const csvPath = path.join(filePath, fileName);
+          const type = fileName.split(".")[0];
+          const fileData = fs.readFileSync(csvPath);
+          const fileBuffer = Buffer.from(fileData);
+          let ids: number[] = [];
 
-        const uploadResponse = await glacier
-          .uploadArchive({
-            accountId: process.env.AWS_ACCOUNT_ID,
-            vaultName,
-            archiveDescription: `CSV file: ${filePath}`,
-            body: fileBuffer,
-          })
-          .promise();
+          const uploadResponse = await glacier
+            .uploadArchive({
+              accountId: process.env.AWS_ACCOUNT_ID,
+              vaultName,
+              archiveDescription: `CSV file: ${filePath}`,
+              body: fileBuffer,
+            })
+            .promise();
 
-        console.log(`Upload successful. Archive ID: ${uploadResponse.archiveId}`);
+          console.log(`Upload successful. Archive ID: ${uploadResponse.archiveId}`);
 
-        if (type === "advertisements") {
-          ids = dataToBeArchived.advertisements.map((advertisement) => advertisement.id);
-        } else if (type === "listingBookmarks") {
-          dataToBeArchived.listings.forEach((listing) => {
-            listing.listingBookmarks.forEach((bookmark) => {
-              ids.push(bookmark.id);
+          if (type === "advertisements") {
+            ids = dataToBeArchived.advertisements.map((advertisement) => advertisement.id);
+          } else if (type === "listingBookmarks") {
+            dataToBeArchived.listings.forEach((listing) => {
+              listing.listingBookmarks.forEach((bookmark) => {
+                ids.push(bookmark.id);
+              });
             });
-          });
-        } else if (type === "listings") {
-          ids = dataToBeArchived.listings.map((listing) => listing.id);
-        } else if (type === "messages") {
-          dataToBeArchived.rooms.forEach((room) => {
-            room.messages.forEach((message) => {
-              ids.push(message.id);
+          } else if (type === "listings") {
+            ids = dataToBeArchived.listings.map((listing) => listing.id);
+          } else if (type === "messages") {
+            dataToBeArchived.rooms.forEach((room) => {
+              room.messages.forEach((message) => {
+                ids.push(message.id);
+              });
             });
-          });
-        } else if (type === "rooms") {
-          ids = dataToBeArchived.rooms.map((room) => room.id);
-        }
-
-        ids.forEach((id) => {
-          if (!parsedJsonData[type]) {
-            parsedJsonData[type] = {}; // Initialize the object if it doesn't exist
-          }
-          parsedJsonData[type][id] = uploadResponse.archiveId;
-        });
-
-        fs.writeFile(jsonPath, JSON.stringify(parsedJsonData, null, 2), (err) => {
-          if (err) {
-            console.log("Error writing to JSON file:", err);
-            return;
+          } else if (type === "rooms") {
+            ids = dataToBeArchived.rooms.map((room) => room.id);
           }
 
-          resolve();
+          ids.forEach((id) => {
+            if (!parsedJsonData[type]) {
+              parsedJsonData[type] = {}; // Initialize the object if it doesn't exist
+            }
+            parsedJsonData[type][id] = uploadResponse.archiveId;
+          });
+
+          fs.writeFile(jsonPath, JSON.stringify(parsedJsonData, null, 2), (err) => {
+            if (err) {
+              console.log("Error writing to JSON file:", err);
+              return;
+            }
+
+            resolve();
+          });
         });
       });
+
+      await Promise.all(promises);
+      resolve();
     });
   });
 };
@@ -231,7 +236,7 @@ const main = async () => {
 
   await Promise.all(promises);
 
-  console.log("CSV Uploaded");
+  console.log("CSVs generated");
   console.log("Uploading to Glacier");
 
   await uploadCSVToGlacier(vaultName, csvFilePath, dataToBeArchived).catch((error) => {

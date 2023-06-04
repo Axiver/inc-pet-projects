@@ -15,8 +15,14 @@ export const createOutputFolder = (outputDir: string) => {
   });
 };
 
-export const generateCSV = (outputDir: string, data: any, fileName: string) => {
+export const generateCSV = (outputDir: string, data: any[], fileName: string) => {
   return new Promise<void>(async (resolve, reject) => {
+    // Check if data is empty
+    if (data.length === 0) {
+      resolve();
+      return;
+    }
+
     console.log(`Generating CSV for ${fileName}`);
 
     const parser = new AsyncParser();
