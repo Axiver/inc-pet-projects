@@ -15,12 +15,12 @@ export const createOutputFolder = (outputDir: string) => {
   });
 };
 
-export const generateCSV = (outputDir: string, listings: any, fileName: string) => {
+export const generateCSV = (outputDir: string, data: any, fileName: string) => {
   return new Promise<void>(async (resolve, reject) => {
     console.log(`Generating CSV for ${fileName}`);
 
     const parser = new AsyncParser();
-    const csv = await parser.parse(listings).promise();
+    const csv = await parser.parse(data).promise();
 
     // Writes the CSV to a file
     fs.writeFile(`${outputDir}/${fileName}.csv`, csv, (err) => {
