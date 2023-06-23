@@ -6,5 +6,7 @@ A pet project focused on user security and error handling
 
 Utilises NextAuth and next-connect
 
-## Socket.io
-A pet project focused on server-side socket.io handling
+## S3-Archival
+A pet project focused on archiving data from any PostgreSQL database into S3 Glacier
+
+Utilises Prisma and the AWS SDK
