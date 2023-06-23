@@ -188,7 +188,7 @@ const cleanUpDatabase = async (dataToBeArchived: Awaited<ReturnType<typeof ident
 // Deletes the entire directory
 const deleteCSVFiles = async (filePath: string) => {
   return new Promise<void>((resolve, reject) => {
-    fs.rmdir(filePath, { recursive: true }, (err) => {
+    fs.rm(filePath, { recursive: true }, (err) => {
       if (err) {
         console.log("Error deleting CSV files:", err);
         return;
